@@ -219,3 +219,5 @@ __marimo__/
 
 # MacOS
 .DS_Store
+.cache/*
+.claude/*
