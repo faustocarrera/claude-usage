@@ -63,6 +63,16 @@ python3 claude-usage monthly --json
 }
 ```
 
+## Export as a zipapp (for easier usage on other machines)
+
+```bash
+python3 -m zipapp claude_usage -p "/usr/bin/env python3" -o bin/claude_usage
+chmod +x bin/claude_usage
+
+# Usage on another machine:
+bin/claude_usage daily --since 20260601 --until 20260630
+```
+
 ## Notes
 
 - **Costs are estimates.** They are computed from published per-token rates, so the numbers reflect what the usage would cost on the API. If you're on a Claude subscription plan, this is not what you are billed.

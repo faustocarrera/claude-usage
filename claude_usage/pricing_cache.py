@@ -1,4 +1,5 @@
 import json
+import ssl
 import sys
 import urllib.request
 from datetime import datetime, timezone
@@ -34,10 +35,17 @@ class PricingCache:
 
         if force_refresh or not self._cache_is_fresh():
             try:
+                try:
+                    import certifi
+                    context = ssl.create_default_context(cafile=certifi.where())
+                except ImportError:
+                    # Fallback for macOS if certifi is not installed and system certs are missing
+                    context = ssl._create_unverified_context()
+
                 req = urllib.request.Request(
                     self.PRICING_URL, headers={"User-Agent": "ccusage-py"}
                 )
-                with urllib.request.urlopen(req, timeout=15) as resp:
+                with urllib.request.urlopen(req, timeout=15, context=context) as resp:
                     data = resp.read()
                 with open(self.cache_file, "wb") as f:
                     f.write(data)
