@@ -28,9 +28,10 @@ Consequences:
 
 ## Architecture
 
-Three modules, one responsibility each:
+Four modules, one responsibility each:
 
-- `__main__.py` — `ClaudeUsage` class + `main()`. Owns log parsing, aggregation, and rendering.
+- `__main__.py` — `main()`. Wires argument parsing to `ClaudeUsage` and renders the result.
+- `claude_usage.py` — `ClaudeUsage` class. Owns log parsing, aggregation, and rendering.
 - `pricing_cache.py` — `PricingCache`. Owns fetching/caching/looking up model prices.
 - `utils.py` — `build_parser()` (argparse subcommands `daily`/`weekly`/`monthly`, all sharing the same flags) and `parse_date()` for `YYYYMMDD`.
 
