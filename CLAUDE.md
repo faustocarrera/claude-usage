@@ -45,7 +45,7 @@ Four modules, one responsibility each:
 
 `aggregate()` buckets records by `period_key()` (`%Y-%m-%d`, ISO `YYYY-Www`, or `%Y-%m`) and multiplies four token counts by four per-token rates. The four categories — `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens` — are threaded consistently through record dicts, group dicts, the table, and the JSON output; adding a fifth means touching all of them.
 
-`aggregate()` also estimates `energy_wh` and `water_ml` per group from `input_tokens + output_tokens` using the `WH_PER_TOKEN`/`ML_PER_TOKEN` constants on `ClaudeUsage`. Those rates are calibrated off a single external data point (a published "median Claude Code session": ~500k input + ~90k output tokens ≈ 41 Wh / 82 mL) and are estimates, not measurements — cache tokens are intentionally excluded since the source data doesn't cover them. Threaded through the same places as the cost field: group dict, `print_table()`, `groups_to_json()`.
+`aggregate()` also estimates `energy_wh` and `water_l` per group from `input_tokens + output_tokens` using the `WH_PER_TOKEN`/`L_PER_TOKEN` constants on `ClaudeUsage`. Those rates are calibrated off a single external data point (a published "median Claude Code session": ~500k input + ~90k output tokens ≈ 41 Wh / 0.082 L) and are estimates, not measurements — cache tokens are intentionally excluded since the source data doesn't cover them. Threaded through the same places as the cost field: group dict, `print_table()`, `groups_to_json()`.
 
 ### Pricing
 

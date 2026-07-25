@@ -9,12 +9,12 @@ from pricing_cache import PricingCache
 class ClaudeUsage:
     DEFAULT_CLAUDE_DIR = Path("~/.claude/projects").expanduser()
 
-    # Wh / mL per token, derived from the "Median Claude Code session" data
-    # point (~500k input + ~90k output tokens -> ~41 Wh, ~82 mL). Applied
+    # Wh / L per token, derived from the "Median Claude Code session" data
+    # point (~500k input + ~90k output tokens -> ~41 Wh, ~0.082 L). Applied
     # uniformly to input + output tokens; cache tokens aren't factored in
     # since the source data doesn't break those out.
     WH_PER_TOKEN = 41 / (500_000 + 90_000)
-    ML_PER_TOKEN = 82 / (500_000 + 90_000)
+    L_PER_TOKEN = 0.082 / (500_000 + 90_000)
 
     def __init__(self, claude_dir=None):
         self.claude_dir = self.DEFAULT_CLAUDE_DIR if claude_dir is None else Path(claude_dir).expanduser()
@@ -109,7 +109,7 @@ class ClaudeUsage:
                 "cache_read_tokens": 0,
                 "cost": 0.0,
                 "energy_wh": 0.0,
-                "water_ml": 0.0,
+                "water_l": 0.0,
                 "models": set(),
             }
         )
@@ -139,7 +139,7 @@ class ClaudeUsage:
 
             session_tokens = r["input_tokens"] + r["output_tokens"]
             g["energy_wh"] += session_tokens * self.WH_PER_TOKEN
-            g["water_ml"] += session_tokens * self.ML_PER_TOKEN
+            g["water_l"] += session_tokens * self.L_PER_TOKEN
 
         return dict(sorted(groups.items()))
 
@@ -157,7 +157,7 @@ class ClaudeUsage:
             "Cache Read",
             "Cost (USD)",
             "Energy (Wh)",
-            "Water (mL)",
+            "Water (L)",
             "Models",
         ]
         rows = []
@@ -168,7 +168,7 @@ class ClaudeUsage:
             "cache_read_tokens": 0,
             "cost": 0.0,
             "energy_wh": 0.0,
-            "water_ml": 0.0,
+            "water_l": 0.0,
         }
         for key, g in groups.items():
             rows.append(
@@ -180,12 +180,12 @@ class ClaudeUsage:
                     f"{g['cache_read_tokens']:,}",
                     f"${g['cost']:.2f}",
                     f"{g['energy_wh']:.1f}",
-                    f"{g['water_ml']:.1f}",
+                    f"{g['water_l']:.3f}",
                     ", ".join(sorted(g["models"])),
                 ]
             )
             for k in ("input_tokens", "output_tokens", "cache_creation_tokens",
-                       "cache_read_tokens", "cost", "energy_wh", "water_ml"):
+                       "cache_read_tokens", "cost", "energy_wh", "water_l"):
                 total[k] += g[k]
 
         rows.append(
@@ -197,7 +197,7 @@ class ClaudeUsage:
                 f"{total['cache_read_tokens']:,}",
                 f"${total['cost']:.2f}",
                 f"{total['energy_wh']:.1f}",
-                f"{total['water_ml']:.1f}",
+                f"{total['water_l']:.3f}",
                 "",
             ]
         )
@@ -229,7 +229,7 @@ class ClaudeUsage:
                 "cache_read_tokens": g["cache_read_tokens"],
                 "cost_usd": round(g["cost"], 4),
                 "energy_wh": round(g["energy_wh"], 2),
-                "water_ml": round(g["water_ml"], 2),
+                "water_l": round(g["water_l"], 4),
                 "models": sorted(g["models"]),
             }
         return json.dumps(out, indent=2)
