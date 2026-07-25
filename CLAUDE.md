@@ -9,22 +9,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Running
 
 ```bash
-python3 claude-usage daily                          # also: weekly, monthly
-python3 claude-usage daily --since 20260701 --until 20260723
-python3 claude-usage monthly --json
-python3 claude-usage daily --path /some/other/projects
-python3 claude-usage daily --refresh-pricing        # force pricing re-download
+python3 claude_usage daily                          # also: weekly, monthly
+python3 claude_usage daily --since 20260701 --until 20260723
+python3 claude_usage monthly --json
+python3 claude_usage daily --path /some/other/projects
+python3 claude_usage daily --refresh-pricing        # force pricing re-download
 ```
 
 There is no build step, no packaging (`setup.py`/`pyproject.toml`), no test suite, and no lint config. Verify changes by running the CLI directly.
 
+`bin/claude_usage` is a checked-in `zipapp` build of the `claude_usage/` package (see README's "Export as a zipapp" section) for running on machines without this checkout. Rebuild it after any source change: `python3 -m zipapp claude_usage -p "/usr/bin/env python3" -o bin/claude_usage`.
+
 ## Import layout — read before adding modules
 
-The package directory is `claude-usage/` (hyphenated), so it is **not importable as a Python package**. It only works because `python3 claude-usage` executes `claude-usage/__main__.py` with that directory prepended to `sys.path`.
+The package directory is `claude_usage/`. Despite sharing its name with the directory, `claude_usage.py` inside it is **not imported as a package** — `python3 claude_usage ...` runs `claude_usage/__main__.py` with `claude_usage/` itself (not the repo root) prepended to `sys.path`. So `from claude_usage import ClaudeUsage` in `__main__.py` resolves to the sibling module `claude_usage/claude_usage.py`, not a self-import of the package.
 
 Consequences:
 - Modules use **flat imports** (`from pricing_cache import PricingCache`), never relative (`from .pricing_cache import ...`). Relative imports will break the entry point.
-- `claude-usage/__init__.py` is vestigial — it is never executed under this invocation. Don't put logic there.
+- `claude_usage/__init__.py` is vestigial — it is never executed under this invocation. Don't put logic there.
 
 ## Architecture
 
@@ -42,6 +44,8 @@ Four modules, one responsibility each:
 **Deduplication matters**: Claude Code writes the same message into more than one transcript file. `_record_key()` keys on `message.id` + `requestId`, falling back to a SHA-256 of the raw line. Preserve this when touching the parser or costs will be inflated.
 
 `aggregate()` buckets records by `period_key()` (`%Y-%m-%d`, ISO `YYYY-Www`, or `%Y-%m`) and multiplies four token counts by four per-token rates. The four categories — `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens` — are threaded consistently through record dicts, group dicts, the table, and the JSON output; adding a fifth means touching all of them.
+
+`aggregate()` also estimates `energy_wh` and `water_ml` per group from `input_tokens + output_tokens` using the `WH_PER_TOKEN`/`ML_PER_TOKEN` constants on `ClaudeUsage`. Those rates are calibrated off a single external data point (a published "median Claude Code session": ~500k input + ~90k output tokens ≈ 41 Wh / 82 mL) and are estimates, not measurements — cache tokens are intentionally excluded since the source data doesn't cover them. Threaded through the same places as the cost field: group dict, `print_table()`, `groups_to_json()`.
 
 ### Pricing
 
