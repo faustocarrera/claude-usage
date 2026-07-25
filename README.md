@@ -15,12 +15,12 @@ python3 claude-usage monthly
 ```
 
 ```bash
-Date | Input | Output | Cache Create | Cache Read | Cost (USD) | Models
------------+-------+--------+--------------+------------+------------+------------------------------
-2026-07-22 | 4,590 | 12,790 | 34,849 | 329,789 | $0.73 | <synthetic>, claude-opus-4-8
-2026-07-23 | 4 | 671 | 9,403 | 33,602 | $0.09 | claude-opus-4-8
------------+-------+--------+--------------+------------+------------+------------------------------
-TOTAL | 4,594 | 13,461 | 44,252 | 363,391 | $0.82 |
+Date | Input | Output | Cache Create | Cache Read | Cost (USD) | Energy (Wh) | Water (mL) | Models
+-----------+-------+--------+--------------+------------+------------+-------------+------------+------------------------------
+2026-07-22 | 4,590 | 12,790 | 34,849 | 329,789 | $0.73 | 1.2 | 2.4 | <synthetic>, claude-opus-4-8
+2026-07-23 | 4 | 671 | 9,403 | 33,602 | $0.09 | 0.0 | 0.1 | claude-opus-4-8
+-----------+-------+--------+--------------+------------+------------+-------------+------------+------------------------------
+TOTAL | 4,594 | 13,461 | 44,252 | 363,391 | $0.82 | 1.3 | 2.5 |
 ```
 
 ### Options
@@ -53,6 +53,8 @@ python3 claude-usage monthly --json
     "cache_creation_tokens": 1986898,
     "cache_read_tokens": 19137683,
     "cost_usd": 32.0111,
+    "energy_wh": 37.64,
+    "water_ml": 75.28,
     "models": [
       "claude-fable-5",
       "claude-haiku-4-5-20251001",
@@ -79,6 +81,7 @@ bin/claude_usage daily --since 20260601 --until 20260630
 - Claude Code sometimes records the same message in more than one transcript file. Messages are deduplicated by message and request ID so totals aren't inflated.
 - The pricing table is cached in `.cache/model_prices.json` and refreshed at most once every 24 hours. If the download fails, the stale cache is used; with no cache at all, costs display as `$0.00` and a warning is printed to stderr.
 - Models missing from the pricing table — such as the `<synthetic>` pseudo-model Claude Code writes for locally generated messages — are counted as free but still listed in the `Models` column.
+- **Energy (Wh) and Water (mL) are rough estimates**, not measurements. They're derived from a published per-token rate for a "median Claude Code session" (~500k input + ~90k output tokens ≈ 41 Wh / 82 mL) applied uniformly to each period's input + output tokens. Cache tokens aren't factored in, since the source data doesn't break those out.
 
 ## License
 
