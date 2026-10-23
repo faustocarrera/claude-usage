@@ -14,6 +14,7 @@ python3 claude_usage daily --since 20260701 --until 20260723
 python3 claude_usage monthly --json
 python3 claude_usage daily --path /some/other/projects
 python3 claude_usage daily --refresh-pricing        # force pricing re-download
+python3 claude_usage report                         # per-session report; also --json, --markdown
 ```
 
 There is no build step, no packaging (`setup.py`/`pyproject.toml`), no test suite, and no lint config. Verify changes by running the CLI directly.
@@ -30,12 +31,24 @@ Consequences:
 
 ## Architecture
 
-Four modules, one responsibility each:
+Five modules, one responsibility each:
 
-- `__main__.py` — `main()`. Wires argument parsing to `ClaudeUsage` and renders the result.
-- `claude_usage.py` — `ClaudeUsage` class. Owns log parsing, aggregation, and rendering.
+- `__main__.py` — `main()`. Wires argument parsing to `ClaudeUsage` (or `SessionReport` for `report`) and renders the result.
+- `claude_usage.py` — `ClaudeUsage` class. Owns log parsing, aggregation, and rendering for the period reports.
+- `session_report.py` — `SessionReport`. The `report` subcommand: per-session breakdown (project, active time, prompts, tools, edited files, lines, cost). Reuses `ClaudeUsage`'s dedup key, pricing cache, and energy/water constants.
 - `pricing_cache.py` — `PricingCache`. Owns fetching/caching/looking up model prices.
-- `utils.py` — `build_parser()` (argparse subcommands `daily`/`weekly`/`monthly`, all sharing the same flags) and `parse_date()` for `YYYYMMDD`.
+- `utils.py` — `build_parser()` (argparse subcommands `daily`/`weekly`/`monthly`/`report`, all sharing the same flags; `--markdown` only affects `report`) and `parse_date()` for `YYYYMMDD`.
+
+### Session report
+
+`SessionReport.collect()` makes its own pass over the transcripts because it needs every `user`/`assistant` entry, not just ones with `usage`. Things that are easy to get wrong:
+
+- Entries are attributed by their `sessionId`, not by file.
+- One assistant message is split across several lines (one per content block), each repeating `usage`. Usage is deduped with `ClaudeUsage._record_key()`, tool calls by `tool_use.id`, and tool results by `tool_use_id`.
+- Edits are counted from successful `tool_result`s (not `is_error`) whose call was an `EDIT_TOOLS` tool. Lines come from `toolUseResult.structuredPatch`, or `content` line count for a `Write` with `type: "create"`. Calls and results are matched after all files are read, since they can land in different files.
+- Prompts are `user` entries with text content that aren't `isMeta`, `isCompactSummary`, sidechain (subagent), or `<local-command-stdout>`.
+- Active minutes sum gaps between entries, skipping gaps over `IDLE_GAP` (15 min).
+- `--since`/`--until` filter whole sessions by start date, unlike the period reports, which filter per message.
 
 ### Data flow
 

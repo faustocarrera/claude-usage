@@ -10,6 +10,7 @@ Usage:
     python claude-usage daily   [--since YYYYMMDD] [--until YYYYMMDD] [--json]
     python claude-usage weekly  [--since YYYYMMDD] [--until YYYYMMDD] [--json]
     python claude-usage monthly [--since YYYYMMDD] [--until YYYYMMDD] [--json]
+    python claude-usage report  [--since YYYYMMDD] [--until YYYYMMDD] [--json | --markdown]
 
 Options common to all subcommands:
     --path PATH          Override the Claude projects directory
@@ -18,6 +19,7 @@ Options common to all subcommands:
 """
 
 from claude_usage import ClaudeUsage
+from session_report import SessionReport
 from utils import build_parser
 
 
@@ -32,6 +34,13 @@ def main():
 
     cusage = ClaudeUsage(claude_dir=args.path)
     cusage.load_pricing(force_refresh=args.refresh_pricing)
+
+    if args.command == "report":
+        report = SessionReport(cusage)
+        sessions = report.build(since=args.since, until=args.until)
+        print(report.to_json(sessions) if args.json else report.render(sessions, markdown=args.markdown))
+        return
+
     groups = cusage.aggregate(
         args.command, since=getattr(args, "since", None), until=getattr(args, "until", None)
     )
