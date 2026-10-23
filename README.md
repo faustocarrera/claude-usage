@@ -25,7 +25,7 @@ TOTAL | 4,594 | 13,461 | 44,252 | 363,391 | $0.82 | 1.3 | 0.003 |
 
 ### Options
 
-All three subcommands accept the same flags:
+All subcommands accept the same flags:
 
 | Flag                | Description                                                    |
 | ------------------- | -------------------------------------------------------------- |
@@ -34,6 +34,35 @@ All three subcommands accept the same flags:
 | `--json`            | Emit JSON instead of a table                                   |
 | `--path PATH`       | Override the projects directory (default `~/.claude/projects`) |
 | `--refresh-pricing` | Force a re-download of the pricing table                       |
+
+### Session report
+
+`report` breaks usage down per session instead of per period, using only the transcripts (no hooks or extra setup needed):
+
+```bash
+python3 claude_usage report
+python3 claude_usage report --since 20261001 --markdown > report.md
+python3 claude_usage report --json
+```
+
+It prints:
+
+| Section            | What's in it                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| Summary            | Sessions, projects, active minutes, prompts, tool calls, cost, edits and lines changed |
+| Sessions           | One row per session: project, start/end time, active minutes, models, prompts, tool calls, edits, files, lines, cost |
+| By project         | Totals per working directory                                                         |
+| By day             | Totals per day the session started                                                   |
+| Tool usage         | Calls per tool (`Bash`, `Edit`, `Read`, MCP tools, …)                                |
+| Most edited files  | Top 20 files by successful `Edit`/`MultiEdit`/`Write`/`NotebookEdit` calls           |
+
+```bash
+Session  | Project              | Date       | Time        | Active min | Models          | Prompts | Tools | Edits | Files | Lines   | Cost
+---------+----------------------+------------+-------------+------------+-----------------+---------+-------+-------+-------+---------+------
+b2dc23a2 | ~/code/claude-usage  | 2026-10-23 | 22:59-23:00 | 2          | claude-opus-5-5 | 1       | 8     | 1     | 1     | +356/-0 | $0.60
+```
+
+`--since`/`--until` keep or drop a session whole, based on the day it started. `--markdown` only applies to `report`.
 
 ### Examples
 
@@ -81,6 +110,7 @@ bin/claude_usage daily --since 20260601 --until 20260630
 - Claude Code sometimes records the same message in more than one transcript file. Messages are deduplicated by message and request ID so totals aren't inflated.
 - The pricing table is cached in `.cache/model_prices.json` and refreshed at most once every 24 hours. If the download fails, the stale cache is used; with no cache at all, costs display as `$0.00` and a warning is printed to stderr.
 - Models missing from the pricing table — such as the `<synthetic>` pseudo-model Claude Code writes for locally generated messages — are counted as free but still listed in the `Models` column.
+- In `report`, **active minutes** add up the gaps between transcript entries, skipping any gap over 15 minutes, so a session left open overnight doesn't count as hours of work. Lines changed come from the diffs Claude Code stores with each successful edit; failed edits are not counted.
 - **Energy (Wh) and Water (L) are rough estimates**, not measurements. They're derived from a published per-token rate for a "median Claude Code session" (~500k input + ~90k output tokens ≈ 41 Wh / 0.082 L) applied uniformly to each period's input + output tokens. Cache tokens aren't factored in, since the source data doesn't break those out.
 
 ## License

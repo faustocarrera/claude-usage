@@ -14,11 +14,14 @@ def build_parser(description=None, default_path=None):
     parser.add_argument(
         "command",
         nargs="?",
-        choices=["daily", "weekly", "monthly"],
+        choices=["daily", "weekly", "monthly", "report"],
         default="daily",
-        help="usage report type (default: daily)",
+        help="usage report type (default: daily); 'report' breaks usage down per session",
     )
     parser.add_argument("--json", action="store_true", help="output JSON")
+    parser.add_argument(
+        "--markdown", action="store_true", help="output markdown (report only)"
+    )
     parser.add_argument("--since", type=parse_date, help="start date (YYYYMMDD)")
     parser.add_argument("--until", type=parse_date, help="end date (YYYYMMDD)")
     parser.add_argument(
